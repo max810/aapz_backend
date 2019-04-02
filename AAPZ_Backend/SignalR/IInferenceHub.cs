@@ -7,6 +7,6 @@ namespace AAPZ_Backend.SignalR
 {
     public interface IInferenceHub
     {
-        Task InferenceMessage(int label);
+        Task InferenceMessage(string label);
     }
 }

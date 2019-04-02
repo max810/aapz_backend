@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using DAL;
+using DAL.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AAPZ_Backend.Controllers
@@ -10,10 +14,33 @@ namespace AAPZ_Backend.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
+        private AAPZ_BackendContext _context;
+        public ValuesController(AAPZ_BackendContext dbContext)
+        {
+            _context = dbContext;
+        }
+
+        [HttpGet("video")]
+        public IActionResult GetVideoContent()
+        {
+            //User.Identity.Name;
+
+            try
+            {
+                var fs = System.IO.File.Open("BigBuckBunny.mp4", FileMode.Open);
+                return new FileStreamResult(fs, new MediaTypeHeaderValue("video/mp4").MediaType);
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
         // GET api/values
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
+            Company x = new Company();
             return new string[] { "value1", "value2" };
         }
 
