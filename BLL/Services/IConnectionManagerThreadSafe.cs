@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AAPZ_Backend.Providers
+namespace BLL.Services
 {
     public interface IConnectionManagerThreadSafe<TIPAddr>
     {

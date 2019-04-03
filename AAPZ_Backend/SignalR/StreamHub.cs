@@ -1,4 +1,5 @@
-﻿using AAPZ_Backend.Providers;
+﻿using BLL.Providers;
+using BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using SixLabors.ImageSharp;
@@ -13,7 +14,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace AAPZ_Backend.SignalR
+namespace BLL.SignalR
 {
     //[Authorize(Roles = "admin")]
     public class StreamHub : Hub<IInferenceHub>

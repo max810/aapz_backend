@@ -6,7 +6,7 @@ namespace DAL.Entities
 {
     public class Ride
     {
-        public int RideId { get; set; }
+        public int Id { get; set; }
         public DateTime StartTime { get; set; } = DateTime.Now;
         public DateTime? EndTime { get; set; } = null;
         public bool InProgress { get; set; } = true;

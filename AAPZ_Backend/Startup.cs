@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AAPZ_Backend.Providers;
-using AAPZ_Backend.SignalR;
+﻿using BLL.Services;
+using BLL.SignalR;
 using DAL;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,12 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Quartz;
-using Quartz.Impl;
 
-namespace AAPZ_Backend
+namespace BLL
 {
     public class Startup
     {
@@ -39,16 +31,11 @@ namespace AAPZ_Backend
             services.AddIdentity<IdentityUser, IdentityRole>()
                  .AddEntityFrameworkStores<AAPZ_BackendContext>()
                  .AddDefaultTokenProviders();
+            //services.AddSingleton<> // add BLL Utils
             services.AddDbContext<AAPZ_BackendContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Singleton);
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddSignalR();
-
-
-            // TODO
-            // ADD QUARTZ.NET SCHEDULER AS SINGLETON
-            // GIVE HIM CONTEXT
-            // SAVECHANGES EVERY 1 minute
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

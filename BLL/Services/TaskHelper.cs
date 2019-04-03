@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace AAPZ_Backend.Providers
+namespace BLL.Services
 {
     public static class TaskHelper
     {
@@ -12,9 +13,9 @@ namespace AAPZ_Backend.Providers
         /// background, separate from the current thread, with no risk
         /// of it trying to rejoin the current thread.
         /// </summary>
-        public static void RunBg(Action fn)
+        public static ConfiguredTaskAwaitable RunBg(Action fn)
         {
-            Task.Run(fn).ConfigureAwait(false);
+            return Task.Run(fn).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -23,10 +24,11 @@ namespace AAPZ_Backend.Providers
         /// are multiple gaps in thread use that may be long.
         /// Use for example when talking to a slow webservice.
         /// </summary>
-        public static void RunBgLong(Action fn)
+        public static ConfiguredTaskAwaitable RunBgLong(Action fn)
         {
-            Task.Factory.StartNew(fn, TaskCreationOptions.LongRunning)
+            return Task.Factory.StartNew(fn, TaskCreationOptions.LongRunning)
                 .ConfigureAwait(false);
+
         }
     }
 }

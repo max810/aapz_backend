@@ -3,8 +3,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
-using AAPZ_Backend.Providers;
+using BLL.Services;
 using DAL;
 using DAL.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -12,139 +13,53 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Quartz.Impl;
 
-namespace AAPZ_Backend.Controllers
+namespace BLL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class StreamController : ControllerBase
     {
-        private IConnectionManagerThreadSafe<string> _connManager;
+        //private IConnectionManagerThreadSafe<string> _connManager;
         private HttpClient _httpClient = new HttpClient();
-        public static AAPZ_BackendContext _context = null;
-        private static IServiceProvider _provider;
-        private static bool QuartzLaunched = false;
-        public StreamController(IConnectionManagerThreadSafe<string> connManager, AAPZ_BackendContext context, IServiceProvider provider)
+        public AAPZ_BackendContext _context = null;
+        private IServiceProvider _provider;
+        private IConnectionManagerThreadSafe<string> _connManager;
+        //private static bool QuartzLaunched = false;
+        private StreamingLogic _streamingLogic;
+
+        public StreamController(IConnectionManagerThreadSafe<string> connManager, 
+            AAPZ_BackendContext context, 
+            IServiceProvider provider,
+            StreamingLogic streamingLogic)
         {
             _connManager = connManager;
             _context = context;
             _provider = provider;
+            _streamingLogic = streamingLogic;
         }
-        [HttpGet("start-stream")]
-        public IActionResult StartStream(string ipaddr, string port)
+
+        // TODO - add RSA get pbk send pbk 200
+        [HttpPost("start-stream")]
+        public async Task<IActionResult> StartStream(string driverIdentifier)
         {
-            IPEndPoint carAddr = new IPEndPoint(IPAddress.Parse(ipaddr), int.Parse(port));
-            //Task.Run(receive udp dgrams && update _connManager.SetFrame());
-            if (_connManager.IsAlive(carAddr.ToString()))
+            string hash = "";
+            using(MD5 md5 = MD5.Create())
             {
-                return Ok("Stream already exists");
+                hash = Misc.GetMD5HashB64(driverIdentifier);
             }
-            TaskHelper.RunBgLong(async () =>
+            Driver driver = await _context.Drivers.FirstOrDefaultAsync(x => x.IdentifierHashB64 == hash);
+            if(driver is null)
             {
-                if (!QuartzLaunched)
-                {
-                    ISchedulerFactory schedFact = new StdSchedulerFactory();
-                    IScheduler sched = await schedFact.GetScheduler();
-                    await sched.Start();
+                return Unauthorized();
+            }
+            if (_streamingLogic.StreamExists(driver))
+            {
+                return BadRequest("Stream already exists");
+            }
 
-                    // define the job and tie it to our HelloJob class
-                    IJobDetail job = JobBuilder.Create<SaverJob>()
-                        .WithIdentity("saverJob", "group1")
-                        .Build();
+            _streamingLogic.LaunchNewListeningStream(driver, TimeSpan.FromSeconds(20));
 
-                    // Trigger the job to run now, and then every 40 seconds
-                    ITrigger trigger = TriggerBuilder.Create()
-                      .WithIdentity("saverTrigger", "group1")
-                      .StartNow()
-                      .WithSimpleSchedule(x => x
-                          .WithIntervalInSeconds(40)
-                          .RepeatForever())
-                      .Build();
-
-                    await sched.ScheduleJob(job, trigger);
-                    QuartzLaunched = true;
-                }
-                int inferenceEveryFrames = 10;
-                double increaseBy = inferenceEveryFrames / 30.0;
-                double[] classes = new double[10];
-                //AAPZ_BackendContext _context = new AAPZ_BackendContext(); //(AAPZ_BackendContext)_provider.GetService(typeof(AAPZ_BackendContext));
-                UdpClient udpClient = new UdpClient(5005);
-                bool connectionAlive = false;
-                byte[] dgram = new byte[] { };
-                string senderAddr = "-";
-                Ride ride = new Ride();
-                Driver driver = _context.Drivers.FirstOrDefault(x => x.UserId == 3); // TODO - find by address
-                ride.Driver = driver;
-                ride.DriverId = driver.UserId;
-                _context.Add(ride);
-                _context.SaveChanges();
-                Console.WriteLine("Starting receiving stream");
-                try
-                {
-                    int i = 0;
-                    while (true)
-                    {
-                        // JUST connManager.GetFrame(...) and write it
-                        // All other code to another method
-
-                        //var clsTimer = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                        Task frameAwaiter = Task.Delay(TimeSpan.FromSeconds(30));
-                        Task frameReader = Task.Run(() =>
-                        {
-                            dgram = udpClient.Receive(ref carAddr);
-                        });
-
-                        await Task.WhenAny(frameReader, frameAwaiter);
-
-                        if (!frameReader.IsCompleted && frameAwaiter.IsCompleted)
-                        {
-                            // handle not receiving frames
-                            //await Clients.Caller.InferenceMessage("-1");
-                            _connManager.SetZombie(senderAddr);
-                            return;
-                        }
-                        if (!connectionAlive) // used once just to set true in connections
-                        {
-                            connectionAlive = true;
-                            senderAddr = ipaddr + ":" + port;
-                            _connManager.SetAlive(senderAddr);
-                            ride.StartTime = DateTime.Now;
-                        }
-                        _connManager.SetFrame(senderAddr, dgram);
-                        //await writer.WriteAsync(dgram);
-
-                        if (i % inferenceEveryFrames == 0)
-                        {
-                            i = 0;
-                            int classLabelId = int.Parse(await MakeInferenceRequest(dgram));
-                            classes[classLabelId] += increaseBy;
-                            if (classes[classLabelId] >= 1)
-                            {
-                                classes[classLabelId] -= 1;
-                                ride.IncrementDrivingClass(classLabelId);
-                            }
-                            _connManager.SetClassId(senderAddr, classLabelId);
-                            _context.Entry(ride).State = EntityState.Modified;
-                        }
-                        ++i;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("EXCEPTION: " + e.Message);
-                    throw e;
-                }
-                finally
-                {
-                    udpClient.Close();
-                    ride.InProgress = false;
-                    ride.EndTime = DateTime.Now;
-                    _context.Entry(ride).State = EntityState.Modified;
-                    _context.SaveChanges();
-                }
-            });
-            Response.StatusCode = 201;
-
-            return Created("", null);
+            return Ok();
         }
 
         private async Task<string> MakeInferenceRequest(byte[] imgJpegEncoded)
@@ -158,14 +73,4 @@ namespace AAPZ_Backend.Controllers
             return await res.Content.ReadAsStringAsync();
         }
     }
-
-    class SaverJob : IJob
-    {
-        public Task Execute(IJobExecutionContext context)
-        {
-            return StreamController._context.SaveChangesAsync();
-        }
-    }
-
-
 }

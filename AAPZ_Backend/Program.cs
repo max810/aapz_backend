@@ -10,22 +10,24 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace AAPZ_Backend
+
+namespace BLL
 {
     public class Program
     {
-        public static ConcurrentDictionary<string, bool> AliveConnections = new ConcurrentDictionary<string, bool>();
+        //public static ConcurrentDictionary<string, bool> AliveConnections = new ConcurrentDictionary<string, bool>();
         public static void Main(string[] args)
         {
             //IPEndPoint x = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5005);
             //Console.WriteLine(x.ToString());
             //Console.ReadLine();
-            CreateWebHostBuilder(args).Build().Run();
+            BuildWebHost(args).Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+        public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseKestrel(options => options.ListenAnyIP(5000))
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+                .Build();
     }
 }

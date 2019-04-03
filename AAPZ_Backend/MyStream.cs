@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
 
-namespace AAPZ_Backend
+namespace BLL
 {
     public class ReturningMemoryStream : MemoryStream
     {

@@ -8,7 +8,7 @@ using DAL;
 using DAL.Entities;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AAPZ_Backend.Controllers
+namespace BLL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

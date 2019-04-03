@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AAPZ_Backend.SignalR
+namespace BLL.SignalR
 {
     public interface IInferenceHub
     {
