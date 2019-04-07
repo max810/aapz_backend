@@ -4,14 +4,16 @@ using DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(AAPZ_BackendContext))]
-    partial class AAPZ_BackendContextModelSnapshot : ModelSnapshot
+    [Migration("20190407202900_RideUseDoubleFixed")]
+    partial class RideUseDoubleFixed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,7 +23,7 @@ namespace DAL.Migrations
 
             modelBuilder.Entity("DAL.Entities.Company", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("CompanyId")
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
@@ -31,14 +33,16 @@ namespace DAL.Migrations
 
                     b.Property<string>("Phone");
 
-                    b.HasKey("Id");
+                    b.HasKey("CompanyId");
 
                     b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("DAL.Entities.Driver", b =>
                 {
-                    b.Property<string>("Id");
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("Age");
 
@@ -48,16 +52,22 @@ namespace DAL.Migrations
 
                     b.Property<string>("IdentifierHashB64");
 
-                    b.HasKey("Id");
+                    b.Property<string>("UserId1");
+
+                    b.HasKey("UserId");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Drivers");
                 });
 
             modelBuilder.Entity("DAL.Entities.Manager", b =>
                 {
-                    b.Property<string>("Id");
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("Certificate");
 
@@ -65,9 +75,13 @@ namespace DAL.Migrations
 
                     b.Property<string>("FullName");
 
-                    b.HasKey("Id");
+                    b.Property<string>("UserId1");
+
+                    b.HasKey("UserId");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Managers");
                 });
@@ -80,7 +94,7 @@ namespace DAL.Migrations
 
                     b.Property<double>("DrinkSeconds");
 
-                    b.Property<string>("DriverId");
+                    b.Property<int>("DriverId");
 
                     b.Property<DateTime?>("EndTime");
 
@@ -283,8 +297,7 @@ namespace DAL.Migrations
 
                     b.HasOne("DAL.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("Id")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("UserId1");
                 });
 
             modelBuilder.Entity("DAL.Entities.Manager", b =>
@@ -296,15 +309,15 @@ namespace DAL.Migrations
 
                     b.HasOne("DAL.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("Id")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("UserId1");
                 });
 
             modelBuilder.Entity("DAL.Entities.Ride", b =>
                 {
                     b.HasOne("DAL.Entities.Driver", "Driver")
-                        .WithMany("Rides")
-                        .HasForeignKey("DriverId");
+                        .WithMany()
+                        .HasForeignKey("DriverId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

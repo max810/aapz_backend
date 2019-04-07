@@ -1,4 +1,5 @@
 ﻿using BLL.Models;
+using BLL.Models.Events;
 using BLL.Services;
 using DAL;
 using DAL.Entities;
@@ -12,134 +13,163 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BLL
 {
     public class StreamingLogic
     {
-        public static bool SaverLaunched = false;
-        public ConcurrentDictionary<string, DriverVideoStream> VideoStreams { get; private set; } = new ConcurrentDictionary<string, DriverVideoStream>(); // use this
+        // TODO - delete all overloads with driver
 
-        private AAPZ_BackendContext _context;
-        private IConnectionManagerThreadSafe<string> _connManager;
-        private HttpClient _httpClient = new HttpClient();
-        private ISchedulerFactory schedulerFactory = new StdSchedulerFactory();
-        private readonly Queue<int> freePorts = new Queue<int>(Enumerable.Range(5000, 65535 - 5000));
+        public readonly ConcurrentDictionary<string, int> LastClassIdxs = new ConcurrentDictionary<string, int>();
 
-        public StreamingLogic(AAPZ_BackendContext context, IConnectionManagerThreadSafe<string> connManager)
+        private static bool SaverLaunched = false;
+        private readonly AAPZ_BackendContext _context;
+        private readonly HttpClient _httpClient = new HttpClient();
+
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> VideoStreamCls = new ConcurrentDictionary<string, CancellationTokenSource>(); // use this
+        private readonly Stack<int> freePorts = new Stack<int>(Enumerable.Range(6000, 65535 - 6000).Reverse());
+        private readonly ConcurrentDictionary<string, VideoStream> VideoStreams = new ConcurrentDictionary<string, VideoStream>();
+        private readonly ConcurrentDictionary<string, Ride> CurrentRides = new ConcurrentDictionary<string, Ride>();
+        private readonly ISchedulerFactory schedulerFactory = new StdSchedulerFactory();
+
+        public StreamingLogic(AAPZ_BackendContext context)
         {
             _context = context;
-            _connManager = connManager;
         }
 
-        public bool TryGetStream(Driver driver, out DriverVideoStream videoStream)
+        public bool TryGetStream(Driver driver, out VideoStream videoStream)
         {
             return VideoStreams.TryGetValue(driver.IdentifierHashB64, out videoStream);
         }
 
+        public IEnumerable<VideoStream> GetActiveStreams()
+        {
+            return VideoStreams.Values.Where(x => x.IsRunning);
+        }
+
+        //public bool TryGetStream(string driverIdentifierHashB64, out VideoStream videoStream)
+        //{
+        //    return VideoStreams.TryGetValue(driverIdentifierHashB64, out videoStream);
+        //}
+
         public bool StreamExists(Driver driver)
         {
-            return _connManager.IsAlive(driver.IdentifierHashB64);
+            return VideoStreams.TryGetValue(driver.IdentifierHashB64, out VideoStream stream) && stream.IsRunning;
         }
 
-        public int LaunchNewListeningStream(Driver driver, TimeSpan listeningTimeout)
+        //public bool StreamExists(string driverIdentifierHashB64)
+        //{
+        //    return VideoStreams.TryGetValue(driverIdentifierHashB64, out VideoStream stream) && stream.IsRunning;
+        //}
+
+        public void StopStream(Driver driver)
         {
-            int nextFreePort = BindNextFreePort();
-            TaskHelper.RunBgLong(() => LaunchListeningStream(driver, nextFreePort, listeningTimeout));
-
-            return nextFreePort;
+            VideoStreamCls[driver.IdentifierHashB64].Cancel();
         }
 
-        private int BindNextFreePort()
-        {
-            return freePorts.Dequeue();
-        }
+        //public void StopStream(string driverIdentifierHashB64)
+        //{
+        //    VideoStreamCls[driverIdentifierHashB64].Cancel();
+        //}
 
-        private async void LaunchListeningStream(Driver driver, int port, TimeSpan listeningTimeout)
+        //public int StartNewListeningStream(Driver driver, TimeSpan listeningTimeout)
+        //{
+        //    return StartNewListeningStream(driver.IdentifierHashB64, listeningTimeout);
+        //}
+
+        public int StartNewListeningStream(Driver driver, TimeSpan listeningTimeout)
         {
             if (!SaverLaunched)
             {
-                await LaunchSaver();
+                LaunchSaver().Wait();
                 SaverLaunched = true;
             }
-            int inferenceEveryFrames = 10;
-            double increaseBy = inferenceEveryFrames / 30.0;
-            double[] classes = new double[10];
-            //AAPZ_BackendContext _context = new AAPZ_BackendContext(); //(AAPZ_BackendContext)_provider.GetService(typeof(AAPZ_BackendContext));
-            UdpClient udpClient = new UdpClient(5005);
-            bool connectionAlive = false;
-            byte[] dgram = new byte[] { };
-            string senderAddr = "-";
-            Ride ride = new Ride
+            int listeningPort = GrabNextFreePort();
+
+            var stream = StartNewListeningStream(driver, listeningPort, listeningTimeout);
+            
+            // listeningPort is now occupied
+            return listeningPort;
+        }
+
+        private int GrabNextFreePort()
+        {
+            return freePorts.Pop();
+        }
+
+        private void FreePort(int port)
+        {
+            freePorts.Push(port);
+        }
+
+        //// maybe void?
+        //private async Task StartNewListeningStream(Driver driver, int port, TimeSpan listeningTimeout)
+        //{
+        //    await StartNewListeningStream(driver.IdentifierHashB64, port, listeningTimeout);
+        //}
+
+        private VideoStream StartNewListeningStream(Driver driver, int port, TimeSpan listeningTimeout, bool withInference = true)
+        {
+            string driverId = driver.IdentifierHashB64;
+            var stream = new VideoStream(driverId, port, listeningTimeout);
+
+            //string driverId = driver.IdentifierHashB64;
+            VideoStreams.AddOrUpdate(driverId, stream, (_, __) => stream);
+
+            var cls = new CancellationTokenSource();
+            VideoStreamCls.AddOrUpdate(driverId, cls, (_, __) => cls);
+
+            Ride ride = new Ride()
             {
                 Driver = driver,
-                DriverId = driver.UserId
+                DriverId = driver.Id,
+                //StartTime = DateTime.Now,
+                InProgress = true,
             };
-            _context.Add(ride);
-            _context.SaveChanges();
-            Console.WriteLine("Starting receiving stream");
-            try
+
+            stream.Started += (s, e) => ride.StartTime = DateTime.Now;
+
+            stream.Closed += (s, e) =>
             {
-                int i = 0;
-                while (true)
+                FreePort((s as VideoStream).Port);
+                if (withInference)
                 {
-                    Task frameAwaiter = Task.Delay(TimeSpan.FromSeconds(30));
-                    Task frameReader = Task.Run(() =>
-                    {
-                        //IPEndPoint
-                        dgram = udpClient.Receive(ref carAddr);
-                    });
-
-                    await Task.WhenAny(frameReader, frameAwaiter);
-
-                    if (!frameReader.IsCompleted && frameAwaiter.IsCompleted)
-                    {
-                        // handle not receiving frames
-                        //await Clients.Caller.InferenceMessage("-1");
-                        _connManager.SetZombie(senderAddr);
-                        return;
-                    }
-                    if (!connectionAlive) // used once just to set true in connections
-                    {
-                        connectionAlive = true;
-                        senderAddr = ipaddr + ":" + port;
-                        _connManager.SetAlive(senderAddr);
-                        ride.StartTime = DateTime.Now;
-                    }
-                    _connManager.SetFrame(senderAddr, dgram);
-                    //await writer.WriteAsync(dgram);
-
-                    if (i % inferenceEveryFrames == 0)
-                    {
-                        i = 0;
-                        int classLabelId = int.Parse(await MakeInferenceRequest(dgram));
-                        classes[classLabelId] += increaseBy;
-                        if (classes[classLabelId] >= 1)
-                        {
-                            classes[classLabelId] -= 1;
-                            ride.IncrementDrivingClass(classLabelId);
-                        }
-                        _connManager.SetClassId(senderAddr, classLabelId);
-                        _context.Entry(ride).State = EntityState.Modified;
-                    }
-                    ++i;
+                    ride.EndTime = DateTime.Now;
+                    ride.InProgress = false;
+                    _context.Entry(ride).State = EntityState.Modified;
+                    _context.SaveChanges();
                 }
-            }
-            catch (Exception e)
+            };
+
+            if (withInference)
             {
-                Console.WriteLine("EXCEPTION: " + e.Message);
-                throw e;
-            }
-            finally
-            {
-                udpClient.Close();
-                ride.InProgress = false;
-                ride.EndTime = DateTime.Now;
-                _context.Entry(ride).State = EntityState.Modified;
-                _context.SaveChanges();
+                // TODO - add inference every <10> frames
+                stream.FrameReceived += OnFrameReceived;
             }
 
+            TaskHelper.RunBgLong(() =>
+                stream.Start(cls.Token)
+                .Wait());
+
+            _context.Rides.Add(ride);
+            CurrentRides[driverId] = ride;
+
+            return stream;
+        }
+
+        private async void OnFrameReceived(object sender, FrameReceivedEventArgs e)
+        {
+            VideoStream stream = sender as VideoStream;
+            if (stream.FramesReceived % 10 == 0)
+            {
+                int classIdx = await MakeInferenceRequest(e.CurrentFrame);
+                Ride ride = CurrentRides[stream.DriverIdentifierHashB64];
+
+                LastClassIdxs[stream.DriverIdentifierHashB64] = classIdx;
+                ride.IncreaseClassCount(classIdx, 10.0 / 30.0);
+            }
         }
 
         private async Task LaunchSaver()
@@ -151,6 +181,8 @@ namespace BLL
             IJobDetail job = JobBuilder.Create<SaverJob>()
                 .WithIdentity("saverJob", "group1")
                 .Build();
+
+            job.JobDataMap["_context"] = _context;
 
             // Trigger the job to run now, and then every 40 seconds
             ITrigger trigger = TriggerBuilder.Create()
@@ -164,15 +196,16 @@ namespace BLL
             await sched.ScheduleJob(job, trigger);
         }
 
-        private async Task<string> MakeInferenceRequest(byte[] imgJpegEncoded)
+        private async Task<int> MakeInferenceRequest(byte[] imgJpegEncoded)
         {
+            //TODO - inject Configuration and get classifier url from there
             //client.BaseAddress = new Uri("http://localost:8000");
             //var request = new HttpRequestMessage(HttpMethod.Post, "classifier/inference");
             //request.Content = new ByteArrayContent(imgJpegEncoded);
             //var r = await client.GetAsync("http://localhost:8000/classifier");
             var res = await _httpClient.PostAsync("http://localhost:8000/classifier/inference", new ByteArrayContent(imgJpegEncoded));
 
-            return await res.Content.ReadAsStringAsync();
+            return int.Parse(await res.Content.ReadAsStringAsync());
         }
 
         private class SaverJob : IJob

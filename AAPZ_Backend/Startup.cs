@@ -27,13 +27,14 @@ namespace BLL
             services.AddCors();
             string connectionString = Configuration.GetConnectionString("DefaultConnection");
 
-            services.AddSingleton<IConnectionManagerThreadSafe<string>, ConnectionManagerThreadSafe<string>>();
+            //services.AddSingleton<IConnectionManagerThreadSafe<string>, ConnectionManagerThreadSafe<string>>();
             services.AddIdentity<IdentityUser, IdentityRole>()
                  .AddEntityFrameworkStores<AAPZ_BackendContext>()
                  .AddDefaultTokenProviders();
             //services.AddSingleton<> // add BLL Utils
             services.AddDbContext<AAPZ_BackendContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Singleton);
 
+            services.AddSingleton<StreamingLogic>();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddSignalR();
         }

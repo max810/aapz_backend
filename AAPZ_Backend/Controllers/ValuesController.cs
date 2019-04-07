@@ -18,6 +18,21 @@ namespace BLL.Controllers
         public ValuesController(AAPZ_BackendContext dbContext)
         {
             _context = dbContext;
+            //Company x = _context.Companies.First(y => y.Id == 1);
+            //User u = _context.Users.FirstOrDefault(y => y.Id == "0");
+            //Driver driver = new Driver()
+            //{
+            //    Age = 45,
+            //    Company = x,
+            //    CompanyId = x.Id,
+            //    Experience = 10,
+            //    IdentifierHashB64 = "zeus",
+            //    User = u,
+            //    Id = u.Id,
+            //};
+
+            //_context.Drivers.Add(driver);
+            //_context.SaveChanges();
         }
 
         [HttpGet("video")]

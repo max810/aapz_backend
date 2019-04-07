@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 
 namespace BLL.Services
 {
+    /// <summary>
+    /// DEPRECATED
+    /// </summary>
+    /// <typeparam name="TIPAddr"></typeparam>
     public interface IConnectionManagerThreadSafe<TIPAddr>
     {
         void SetAlive(TIPAddr addr);

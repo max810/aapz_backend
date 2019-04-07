@@ -23,16 +23,13 @@ namespace BLL.Controllers
         private HttpClient _httpClient = new HttpClient();
         public AAPZ_BackendContext _context = null;
         private IServiceProvider _provider;
-        private IConnectionManagerThreadSafe<string> _connManager;
         //private static bool QuartzLaunched = false;
         private StreamingLogic _streamingLogic;
 
-        public StreamController(IConnectionManagerThreadSafe<string> connManager, 
-            AAPZ_BackendContext context, 
+        public StreamController(AAPZ_BackendContext context, 
             IServiceProvider provider,
             StreamingLogic streamingLogic)
         {
-            _connManager = connManager;
             _context = context;
             _provider = provider;
             _streamingLogic = streamingLogic;
@@ -48,18 +45,27 @@ namespace BLL.Controllers
                 hash = Misc.GetMD5HashB64(driverIdentifier);
             }
             Driver driver = await _context.Drivers.FirstOrDefaultAsync(x => x.IdentifierHashB64 == hash);
+            // TODO - find by driverIdentifier
+            driver = await _context.Drivers.FirstOrDefaultAsync(x => x.Id == "0");
             if(driver is null)
             {
                 return Unauthorized();
             }
             if (_streamingLogic.StreamExists(driver))
             {
-                return BadRequest("Stream already exists");
+                return UnprocessableEntity("Stream already exists");
             }
 
-            _streamingLogic.LaunchNewListeningStream(driver, TimeSpan.FromSeconds(20));
+            int listentingPort = _streamingLogic.StartNewListeningStream(driver, TimeSpan.FromSeconds(20));
 
-            return Ok();
+            return Ok(listentingPort);
+        }
+
+        [HttpPost("stop-stream")]
+        public async Task<IActionResult> StopStream(string driverIdentifier)
+        {
+            throw new NotImplementedException();
+            // TODO - implement get driver. _streaming.StopStream();
         }
 
         private async Task<string> MakeInferenceRequest(byte[] imgJpegEncoded)

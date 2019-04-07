@@ -10,53 +10,53 @@ namespace DAL.Entities
         public DateTime StartTime { get; set; } = DateTime.Now;
         public DateTime? EndTime { get; set; } = null;
         public bool InProgress { get; set; } = true;
-        public int DriverId { get; set; }
-        public int NormalDrivingSeconds { get; set; }
-        public int MobileRightSeconds { get; set; }
-        public int MobileRightHeadSeconds { get; set; }
-        public int MobileLeftSeconds { get; set; }
-        public int MobileLeftHeadSeconds { get; set; }
-        public int RadioSeconds { get; set; }
-        public int DrinkSeconds { get; set; }
-        public int SearchSeconds { get; set; }
-        public int MakeupSeconds { get; set; }
-        public int TalkingSeconds { get; set; }
+        public string DriverId { get; set; }
+        public double NormalDrivingSeconds { get; set; }
+        public double MobileRightSeconds { get; set; }
+        public double MobileRightHeadSeconds { get; set; }
+        public double MobileLeftSeconds { get; set; }
+        public double MobileLeftHeadSeconds { get; set; }
+        public double RadioSeconds { get; set; }
+        public double DrinkSeconds { get; set; }
+        public double SearchSeconds { get; set; }
+        public double MakeupSeconds { get; set; }
+        public double TalkingSeconds { get; set; }
 
         public virtual Driver Driver { get; set; }
 
-        public void IncrementDrivingClass(int classId)
+        public void IncreaseClassCount(int classId, double value)
         {
             switch (classId)
             {
                 case 0:
-                    ++NormalDrivingSeconds;
+                    NormalDrivingSeconds += value;
                     break;
                 case 1:
-                    ++MobileRightSeconds;
+                    MobileRightSeconds += value;
                     break;
                 case 2:
-                    ++MobileRightHeadSeconds;
+                    MobileRightHeadSeconds += value;
                     break;
                 case 3:
-                    ++MobileLeftSeconds;
+                    MobileLeftSeconds += value;
                     break;
                 case 4:
-                    ++MobileLeftHeadSeconds;
+                    MobileLeftHeadSeconds += value;
                     break;
                 case 5:
-                    ++RadioSeconds;
+                    RadioSeconds += value;
                     break;
                 case 6:
-                    ++DrinkSeconds;
+                    DrinkSeconds += value;
                     break;
                 case 7:
-                    ++SearchSeconds;
+                    SearchSeconds += value;
                     break;
                 case 8:
-                    ++MakeupSeconds;
+                    MakeupSeconds += value;
                     break;
                 case 9:
-                    ++TalkingSeconds;
+                    TalkingSeconds += value;
                     break;
                 default:
                     throw new ArgumentException(string.Format("No such class: {0}", classId));

@@ -1,5 +1,8 @@
-﻿using BLL.Providers;
+﻿using BLL.Models;
+using BLL.Models.Events;
 using BLL.Services;
+using DAL;
+using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using SixLabors.ImageSharp;
@@ -19,100 +22,108 @@ namespace BLL.SignalR
     //[Authorize(Roles = "admin")]
     public class StreamHub : Hub<IInferenceHub>
     {
-        private IConnectionManagerThreadSafe<string> _connManager;
-        public StreamHub(IConnectionManagerThreadSafe<string> connectionManager)
+        private StreamingLogic _streaming;
+        private AAPZ_BackendContext _context;
+        private Channel<byte[]> channel;
+        public StreamHub(StreamingLogic streaming, AAPZ_BackendContext context)
         {
-            _connManager = connectionManager;
+            _streaming = streaming;
+            _context = context;
         }
 
         private HttpClient client = new HttpClient();
 
-        public ChannelReader<byte[]> VideoStream(string addr)
+        public ChannelReader<byte[]> VideoStream(string driverId)
         {
-            var channel = Channel.CreateUnbounded<byte[]>();
+            channel = Channel.CreateUnbounded<byte[]>();
+            var driver = _context.Drivers.FirstOrDefault(x => x.Id == driverId);
 
-            _ = WriteVideo(channel.Writer, addr);
+            VideoStream stream;
+            _streaming.TryGetStream(driver, out stream);
+            string driverIdentifier = stream.DriverIdentifierHashB64;
+            stream.FrameReceived += OnFrameReceived;
+            stream.Closed += OnStreamClosed;
+
+            //_ = WriteVideo(channel.Writer, driver);
+
             string userName = Context.User.Identity.Name;
+
             return channel.Reader;
-
         }
-        private async Task WriteVideo(ChannelWriter<byte[]> writer, string addr)
+
+        //private async Task WriteVideo(ChannelWriter<byte[]> writer, Driver driver)
+        //{
+        //    //byte[] dgram = null;
+        //    int classIdx = -1;
+
+
+        //    //try
+        //    //{
+        //    //    while (true)
+        //    //    {
+        //    //        //_connManager.GetFrame(addr);   
+        //    //        // JUST connManager.GetFrame(...) and write it
+        //    //        // All other code to another method
+
+        //    //        //var clsTimer = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        //    //        Task frameAwaiter = Task.Delay(TimeSpan.FromSeconds(30));
+        //    //        Task frameReader = Task.Run(() =>
+        //    //        {
+        //    //            byte[] newDgram = null;
+        //    //            do
+        //    //            {
+        //    //                newDgram = _connManager.GetFrame(driverId);
+        //    //            } while (newDgram == dgram);
+
+        //    //            dgram = newDgram;
+        //    //        });
+
+        //    //        await Task.WhenAny(frameReader, frameAwaiter);
+
+        //    //        if (!frameReader.IsCompleted && frameAwaiter.IsCompleted)
+        //    //        {
+        //    //            // handle not receiving frames
+        //    //            await Clients.Caller.InferenceMessage("-1");
+        //    //            //_connManager.SetZombie(senderAddr);
+        //    //            return;
+        //    //        }
+
+        //    //        await writer.WriteAsync(dgram);
+        //    //        await Clients.Caller.InferenceMessage(_connManager.GetClassId(driverId).ToString());
+        //    //    }
+        //    //}
+        //    //catch (Exception e)
+        //    //{
+        //    //    Console.WriteLine("EXCEPTION: " + e.Message);
+        //    //    throw e;
+        //    //}
+        //    //finally
+        //    //{
+        //    //    //Clients.Clien().Close();
+        //    //    writer.TryComplete();
+        //    //}
+        //}
+
+        private async void OnStreamClosed(object sender, StreamClosedEventArgs e)
         {
-            //IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
-            //UdpClient client = new UdpClient(5005);
-            //bool connectionAlive = false;
-            byte[] dgram = null;
-            //string senderAddr = "-";
-            try
+            channel.Writer.TryComplete();
+            if(e.Status == DriverVideoStreamFinishStatus.Graceful)
             {
-                while (true)
-                {
-                    //_connManager.GetFrame(addr);   
-                    // JUST connManager.GetFrame(...) and write it
-                    // All other code to another method
-
-                    //var clsTimer = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                    Task frameAwaiter = Task.Delay(TimeSpan.FromSeconds(30));
-                    Task frameReader = Task.Run(() =>
-                    {
-                        byte[] newDgram = null;
-                        do
-                        {
-                            newDgram = _connManager.GetFrame(addr);
-                        } while (newDgram == dgram);
-
-                        dgram = newDgram;
-                    });
-
-                    await Task.WhenAny(frameReader, frameAwaiter);
-
-                    if (!frameReader.IsCompleted && frameAwaiter.IsCompleted)
-                    {
-                        // handle not receiving frames
-                        await Clients.Caller.InferenceMessage("-1");
-                        //_connManager.SetZombie(senderAddr);
-                        return;
-                    }
-
-                    await writer.WriteAsync(dgram);
-                    await Clients.Caller.InferenceMessage(_connManager.GetClassId(addr).ToString());
-                }
+                await Clients.Caller.InferenceMessage("FINISHED SUCCESSFULY");
             }
-            catch (Exception e)
+            else
             {
-                Console.WriteLine("EXCEPTION: " + e.Message);
-                throw e;
-            }
-            finally
-            {
-                //Clients.Clien().Close();
-                writer.TryComplete();
+                await Clients.Caller.InferenceMessage("ERROR HAPPENED ;)");
             }
         }
 
+        private async void OnFrameReceived(object sender, FrameReceivedEventArgs e)
+        {
+            VideoStream stream = sender as VideoStream;
+            int currentClassIdx = _streaming.LastClassIdxs[stream.DriverIdentifierHashB64];
 
-        //public ChannelReader<byte[]> DelayCounter(int delay)
-        //{
-        //    var channel = Channel.CreateUnbounded<byte[]>();
-
-        //    _ = WriteItems(channel.Writer, 20, delay);
-
-        //    return channel.Reader;
-        //}
-
-        //private async Task WriteItems(ChannelWriter<byte[]> writer, int count, int delay)
-        //{
-        //    for (var i = 0; i < count; i++)
-        //    {
-        //        //For every 5 items streamed, add twice the delay
-        //        if (i % 5 == 0)
-        //            delay = delay * 2;
-
-        //        await writer.WriteAsync(new byte[] { 1, 2, 3, (byte)i });
-        //        await Task.Delay(delay);
-        //    }
-
-        //    writer.TryComplete();
-        //}
+            await channel.Writer.WriteAsync(e.CurrentFrame);
+            await Clients.Caller.InferenceMessage(currentClassIdx.ToString());
+        }
     }
 }

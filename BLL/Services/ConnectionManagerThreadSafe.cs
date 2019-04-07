@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace BLL.Services
 {
+    /// <summary>
+    /// DEPRECATED
+    /// </summary>
+    /// <typeparam name="TIPAddr"></typeparam>
     public class ConnectionManagerThreadSafe<TIPAddr> : IConnectionManagerThreadSafe<TIPAddr>
     {
         public static readonly ConcurrentDictionary<TIPAddr, bool> connections = new ConcurrentDictionary<TIPAddr, bool>();
