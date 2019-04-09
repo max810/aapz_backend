@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace BLL
 {
@@ -25,6 +26,10 @@ namespace BLL
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Info { Title = "ACCR CURL", Version = "v1" });
+            });
             string connectionString = Configuration.GetConnectionString("DefaultConnection");
 
             //services.AddSingleton<IConnectionManagerThreadSafe<string>, ConnectionManagerThreadSafe<string>>();
@@ -59,6 +64,13 @@ namespace BLL
                .AllowAnyOrigin()
                .AllowCredentials()
                );
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CURL v1");
+                c.RoutePrefix = string.Empty;
+            });
 
             app.UseSignalR(routes =>
             {

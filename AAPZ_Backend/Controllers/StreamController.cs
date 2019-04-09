@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using BLL.Services;
 using DAL;
 using DAL.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -37,6 +38,9 @@ namespace BLL.Controllers
 
         // TODO - add RSA get pbk send pbk 200
         [HttpPost("start-stream")]
+        [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status422UnprocessableEntity)]
         public async Task<IActionResult> StartStream(string driverIdentifier)
         {
             string hash = "";
