@@ -43,11 +43,7 @@ namespace BLL.Controllers
         [ProducesResponseType(typeof(string), StatusCodes.Status422UnprocessableEntity)]
         public async Task<IActionResult> StartStream(string driverIdentifier)
         {
-            string hash = "";
-            using(MD5 md5 = MD5.Create())
-            {
-                hash = Misc.GetMD5HashB64(driverIdentifier);
-            }
+            string hash = hash = Misc.GetMD5HashB64(driverIdentifier);
             Driver driver = await _context.Drivers.FirstOrDefaultAsync(x => x.IdentifierHashB64 == hash);
             // TODO - find by driverIdentifier
             driver = await _context.Drivers.FirstOrDefaultAsync(x => x.Id == "0");

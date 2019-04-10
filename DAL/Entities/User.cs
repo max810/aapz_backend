@@ -7,5 +7,6 @@ namespace DAL.Entities
 {
     public class User: IdentityUser
     {
+        //public UserRole Role { get; set; }
     }
 }
