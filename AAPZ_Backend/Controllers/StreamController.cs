@@ -22,7 +22,7 @@ namespace BLL.Controllers
     {
         //private IConnectionManagerThreadSafe<string> _connManager;
         private HttpClient _httpClient = new HttpClient();
-        public AAPZ_BackendContext _context = null;
+        private AAPZ_BackendContext _context = null;
         private IServiceProvider _provider;
         //private static bool QuartzLaunched = false;
         private StreamingLogic _streamingLogic;

@@ -52,6 +52,7 @@ namespace BLL
             services.AddDbContext<AAPZ_BackendContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Singleton);
 
             services.AddSingleton<StreamingLogic>();
+            services.AddSingleton<Statistics>();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddSignalR();
         }
