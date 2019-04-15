@@ -10,6 +10,7 @@ using DAL;
 using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AAPZ_Backend.Controllers
@@ -21,29 +22,50 @@ namespace AAPZ_Backend.Controllers
     {
         private readonly AAPZ_BackendContext _context = null;
         private readonly IServiceProvider _provider;
+        private readonly UserManager<User> _userManager;
+        private readonly Statistics _statistics;
 
-        public StatsController(AAPZ_BackendContext context, IServiceProvider provider)
+        public StatsController(AAPZ_BackendContext context, IServiceProvider provider, UserManager<User> userManager,
+             Statistics statistics)
         {
             _context = context;
             _provider = provider;
+            _userManager = userManager;
+            _statistics = statistics;
         }
 
         [HttpGet("driver-stats/{id}")]
         [Authorize(Roles = "Driver,Manager")]
-        public ActionResult<DriverStats> GetDriverStats(int id)
+        public async Task<ActionResult<DriverStats>> GetDriverStats(string id, DateTime? from = null, DateTime? to = null)
         {
-            string currentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            string currentUserRoles = User.FindFirst(ClaimTypes.Role).Value;
-            User currentUser = _context.Users.Single(x => x.Id == currentUserId);
+            User currentUser = await _userManager.GetUserAsync(HttpContext.User);
+            DateTime periodBegin = from ?? DateTime.MinValue;
+            DateTime periodEnd = to ?? DateTime.Now;
 
-            if(User.HasClaim(ClaimTypes.Role, "Manager"))
-            {
-                if(currentUser.Company)
-                    // TODO
-                    //check driver/manager company match IF MANAGER
-                    //check your Id vs request Id IF DRIVER
-            }
+            return await GetDriverStatsPeriod(currentUser, id, periodBegin, periodEnd);
         }
 
+        private async Task<ActionResult<DriverStats>> GetDriverStatsPeriod(
+            User currentUser,
+            string requestedDriverId,
+            DateTime from, DateTime to)
+        {
+            Driver requestedDriver = _context.Drivers.SingleOrDefault(x => x.Id == requestedDriverId);
+
+            if (await _userManager.IsInRoleAsync(currentUser, "Manager"))
+            {
+                Manager currentManager = _context.Managers.Single(x => x.Id == currentUser.Id);
+                if (requestedDriver.CompanyId != currentManager.CompanyId)
+                {
+                    return StatusCode(403, "You and your driver must belong to the same company!");
+                }
+            }
+            else if (currentUser.Id != requestedDriverId)
+            {
+                return StatusCode(403, "You can only get your own statistics!");
+            }
+
+            return _statistics.GetDriverInfo(requestedDriver);
+        }
     }
 }

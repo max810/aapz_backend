@@ -119,7 +119,7 @@ namespace ARKPZ_CourseWork_Backend.Controllers
 
                 if (driver is null)
                 {
-                    return Forbid();
+                    return StatusCode(403);
                 }
 
                 Microsoft.AspNetCore.Identity.SignInResult res = await _signInManager.PasswordSignInAsync(
@@ -155,7 +155,7 @@ namespace ARKPZ_CourseWork_Backend.Controllers
 
                 if (manager is null)
                 {
-                    return Forbid();
+                    return StatusCode(403);
                 }
 
                 Microsoft.AspNetCore.Identity.SignInResult res = await _signInManager.PasswordSignInAsync(

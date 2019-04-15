@@ -20,8 +20,6 @@ namespace BLL
 {
     public class StreamingLogic
     {
-        // TODO - delete all overloads with driver
-
         public readonly ConcurrentDictionary<string, int> LastClassIdxs = new ConcurrentDictionary<string, int>();
 
         private static bool SaverLaunched = false;
@@ -145,7 +143,6 @@ namespace BLL
 
             if (withInference)
             {
-                // TODO - add inference every <10> frames
                 stream.FrameReceived += OnFrameReceived;
             }
 
