@@ -16,7 +16,9 @@ namespace DAL.Entities
         public string IdentifierHashB64 { get; set; }
         public int Age { get; set; }
         public int Experience { get; set; }
-        public int CompanyId { get; set; }
+
+        [ForeignKey("Company")]
+        public string CompanyName { get; set; }
 
         public virtual User User { get; set; }
         public virtual Company Company { get; set; }

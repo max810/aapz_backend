@@ -36,7 +36,7 @@ namespace BLL.SignalR
         public ChannelReader<byte[]> VideoStream(string driverId)
         {
             channel = Channel.CreateUnbounded<byte[]>();
-            var driver = _context.Drivers.FirstOrDefault(x => x.Id == driverId);
+            var driver = _context.Drivers.Single(x => x.Id == driverId);
 
             VideoStream stream;
             _streaming.TryGetStream(driver, out stream);
@@ -113,7 +113,7 @@ namespace BLL.SignalR
             }
             else
             {
-                await Clients.Caller.InferenceMessage("ERROR HAPPENED ;)");
+                await Clients.Caller.InferenceMessage($"ERROR HAPPENED WITH STATUS {e.Status}");
             }
         }
 

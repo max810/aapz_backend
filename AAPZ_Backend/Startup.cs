@@ -28,7 +28,6 @@ namespace BLL
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "ACCR CURL", Version = "v1" });
@@ -48,7 +47,8 @@ namespace BLL
                 options.Password.RequireUppercase = false;
                 options.Password.RequireLowercase = false;
             });
-            //services.AddSingleton<> // add BLL Utils
+            services.AddCors();
+
             services.AddDbContext<AAPZ_BackendContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Singleton);
 
             services.AddSingleton<StreamingLogic>();
@@ -74,9 +74,11 @@ namespace BLL
                config
                .AllowAnyHeader()
                .AllowAnyMethod()
-               .AllowAnyOrigin()
+               .WithOrigins("http://localhost:4200")
                .AllowCredentials()
                );
+
+            app.UseAuthentication();
 
             app.UseSwagger();
             app.UseSwaggerUI(c =>

@@ -38,15 +38,13 @@ namespace BLL.Controllers
 
         // TODO - add RSA get pbk send pbk 200
         [HttpPost("start-stream")]
-        [ProducesResponseType(typeof(void), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(string), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> StartStream(string driverIdentifier)
+        public async Task<ActionResult<int>> StartStream(string driverIdentifier)
         {
-            string hash = hash = Misc.GetMD5HashB64(driverIdentifier);
+            string hash = Misc.GetMD5HashB64(driverIdentifier);
             Driver driver = await _context.Drivers.FirstOrDefaultAsync(x => x.IdentifierHashB64 == hash);
-            // TODO - find by driverIdentifier
-            driver = await _context.Drivers.FirstOrDefaultAsync(x => x.Id == "0");
             if(driver is null)
             {
                 return Unauthorized();
@@ -64,6 +62,10 @@ namespace BLL.Controllers
         [HttpPost("stop-stream")]
         public async Task<IActionResult> StopStream(string driverIdentifier)
         {
+            string hash = hash = Misc.GetMD5HashB64(driverIdentifier);
+            Driver driver = await _context.Drivers.FirstOrDefaultAsync(x => x.IdentifierHashB64 == hash);
+
+            _streamingLogic.StopStream(driver);
             throw new NotImplementedException();
             // TODO - implement get driver. _streaming.StopStream();
         }

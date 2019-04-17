@@ -13,7 +13,9 @@ namespace DAL.Entities
         public string Id { get; set; }
         public string Certificate { get; set; }
         public string FullName { get; set; }
-        public int CompanyId { get; set; }
+
+        [ForeignKey("Company")]
+        public string CompanyName { get; set; }
 
         public virtual User User { get; set; }
         public virtual Company Company { get; set; }

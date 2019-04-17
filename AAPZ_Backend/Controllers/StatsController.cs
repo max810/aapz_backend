@@ -55,7 +55,7 @@ namespace AAPZ_Backend.Controllers
             if (await _userManager.IsInRoleAsync(currentUser, "Manager"))
             {
                 Manager currentManager = _context.Managers.Single(x => x.Id == currentUser.Id);
-                if (requestedDriver.CompanyId != currentManager.CompanyId)
+                if (requestedDriver.CompanyName != currentManager.CompanyName)
                 {
                     return StatusCode(403, "You and your driver must belong to the same company!");
                 }
