@@ -4,14 +4,16 @@ using DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DAL.Migrations
 {
     [DbContext(typeof(AAPZ_BackendContext))]
-    partial class AAPZ_BackendContextModelSnapshot : ModelSnapshot
+    [Migration("20190417150405_ChangedCompany")]
+    partial class ChangedCompany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,18 +23,21 @@ namespace DAL.Migrations
 
             modelBuilder.Entity("DAL.Entities.Company", b =>
                 {
-                    b.Property<string>("Name")
-                        .ValueGeneratedOnAdd();
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("Address");
 
                     b.Property<string>("LogoB64");
 
+                    b.Property<string>("Name");
+
                     b.Property<int>("NumberOfEmployees");
 
                     b.Property<string>("Phone");
 
-                    b.HasKey("Name");
+                    b.HasKey("Id");
 
                     b.ToTable("Companies");
                 });
@@ -45,15 +50,13 @@ namespace DAL.Migrations
 
                     b.Property<int>("CompanyId");
 
-                    b.Property<string>("CompanyName");
-
                     b.Property<int>("Experience");
 
                     b.Property<string>("IdentifierHashB64");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyName");
+                    b.HasIndex("CompanyId");
 
                     b.ToTable("Drivers");
                 });
@@ -66,13 +69,11 @@ namespace DAL.Migrations
 
                     b.Property<int>("CompanyId");
 
-                    b.Property<string>("CompanyName");
-
                     b.Property<string>("FullName");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyName");
+                    b.HasIndex("CompanyId");
 
                     b.ToTable("Managers");
                 });
@@ -283,7 +284,8 @@ namespace DAL.Migrations
                 {
                     b.HasOne("DAL.Entities.Company", "Company")
                         .WithMany("Drivers")
-                        .HasForeignKey("CompanyName");
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("DAL.Entities.User", "User")
                         .WithMany()
@@ -295,7 +297,8 @@ namespace DAL.Migrations
                 {
                     b.HasOne("DAL.Entities.Company", "Company")
                         .WithMany("Managers")
-                        .HasForeignKey("CompanyName");
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("DAL.Entities.User", "User")
                         .WithMany()
