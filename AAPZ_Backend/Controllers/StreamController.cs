@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using BLL;
 using BLL.Services;
 using DAL;
 using DAL.Entities;
@@ -14,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Quartz.Impl;
 
-namespace BLL.Controllers
+namespace AAPZ_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -57,6 +58,23 @@ namespace BLL.Controllers
             int listentingPort = _streamingLogic.StartNewListeningStream(driver, TimeSpan.FromSeconds(20));
 
             return Ok(listentingPort);
+        }
+
+        [HttpGet("stream-exists")]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<ActionResult<bool>> StreamExists(string driverId)
+        {
+            Driver driver = await _context.Drivers.FindAsync(driverId);
+            if (driver is null)
+            {
+                return NotFound();
+            }
+            if (_streamingLogic.StreamExists(driver))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         [HttpPost("stop-stream")]

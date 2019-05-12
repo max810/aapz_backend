@@ -50,60 +50,7 @@ namespace BLL.SignalR
 
             return channel.Reader;
         }
-
-        //private async Task WriteVideo(ChannelWriter<byte[]> writer, Driver driver)
-        //{
-        //    //byte[] dgram = null;
-        //    int classIdx = -1;
-
-
-        //    //try
-        //    //{
-        //    //    while (true)
-        //    //    {
-        //    //        //_connManager.GetFrame(addr);   
-        //    //        // JUST connManager.GetFrame(...) and write it
-        //    //        // All other code to another method
-
-        //    //        //var clsTimer = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        //    //        Task frameAwaiter = Task.Delay(TimeSpan.FromSeconds(30));
-        //    //        Task frameReader = Task.Run(() =>
-        //    //        {
-        //    //            byte[] newDgram = null;
-        //    //            do
-        //    //            {
-        //    //                newDgram = _connManager.GetFrame(driverId);
-        //    //            } while (newDgram == dgram);
-
-        //    //            dgram = newDgram;
-        //    //        });
-
-        //    //        await Task.WhenAny(frameReader, frameAwaiter);
-
-        //    //        if (!frameReader.IsCompleted && frameAwaiter.IsCompleted)
-        //    //        {
-        //    //            // handle not receiving frames
-        //    //            await Clients.Caller.InferenceMessage("-1");
-        //    //            //_connManager.SetZombie(senderAddr);
-        //    //            return;
-        //    //        }
-
-        //    //        await writer.WriteAsync(dgram);
-        //    //        await Clients.Caller.InferenceMessage(_connManager.GetClassId(driverId).ToString());
-        //    //    }
-        //    //}
-        //    //catch (Exception e)
-        //    //{
-        //    //    Console.WriteLine("EXCEPTION: " + e.Message);
-        //    //    throw e;
-        //    //}
-        //    //finally
-        //    //{
-        //    //    //Clients.Clien().Close();
-        //    //    writer.TryComplete();
-        //    //}
-        //}
-
+        
         private async void OnStreamClosed(object sender, StreamClosedEventArgs e)
         {
             channel.Writer.TryComplete();

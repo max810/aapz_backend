@@ -26,5 +26,17 @@ namespace BLL
         {
             return new DriverStats(driver, from, to);
         }
+        
+        public IList<DriverStats> GetRatingList (IEnumerable<Driver> drivers)
+        {
+            var ratedDrivers = new List<DriverStats>();
+            foreach (var driver in drivers)
+            {
+                var stats = GetDriverInfo(driver);
+                ratedDrivers.Add(stats);
+            }
+
+            return ratedDrivers.OrderByDescending(x => x.ClassesStatsScaled["0_normal_driving"]).ToList();
+        }
     }
 }

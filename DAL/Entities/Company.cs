@@ -16,7 +16,7 @@ namespace DAL.Entities
 
         public int NumberOfEmployees
         {
-            get => Drivers.Count + Managers.Count;
+            get => (Drivers?.Count ?? 0) + (Managers?.Count ?? 0);
             private set { }
         }
 

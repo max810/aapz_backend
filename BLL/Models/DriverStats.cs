@@ -1,4 +1,6 @@
 ﻿using DAL.Entities;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,16 +10,17 @@ namespace BLL.Models
 {
     public struct DriverStats
     {
-        public Driver Driver { get; private set; }
+        public string DriverId { get; private set; }
         public int RidesTotal { get; private set; }
         private IEnumerable<Ride> correctRides;
+
         public DrivingStyle DrivingStyle { get; private set; }
         public IDictionary<string, double> ClassesStats { get; private set; }
         public IDictionary<string, double> ClassesStatsScaled { get; private set; }
 
         public DriverStats(Driver driver, DateTime from, DateTime to)
         {
-            Driver = driver;
+            DriverId = driver.Id;
 
             correctRides = driver.Rides
                 .Where(x => x.InProgress == false)
@@ -26,7 +29,7 @@ namespace BLL.Models
             RidesTotal = correctRides.Count();
             ClassesStats = CreateClassesStats(correctRides, from, to);
             ClassesStatsScaled = ScaleClassesStats(ClassesStats);
-            DrivingStyle = EvaluateDrivingStyle(ClassesStats);
+            DrivingStyle = EvaluateDrivingStyle(ClassesStatsScaled);
         }
 
         public DriverStats(Driver driver)

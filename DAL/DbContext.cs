@@ -18,8 +18,15 @@ namespace DAL
         public AAPZ_BackendContext(DbContextOptions<AAPZ_BackendContext> dbContextOptions)
             : base(dbContextOptions)
         {
+
             //Database.EnsureCreated();
             //Database.Migrate();
         }
+
+        //protected override void OnModelCreating(ModelBuilder modelBuilder)
+        //{
+        //    base.OnModelCreating(modelBuilder);
+        //    modelBuilder.Entity<Driver>().OwnsOne(x => x.I);
+        //}
     }
 }

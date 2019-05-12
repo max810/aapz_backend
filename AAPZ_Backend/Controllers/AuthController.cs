@@ -19,7 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
-namespace ARKPZ_CourseWork_Backend.Controllers
+namespace AAPZ_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

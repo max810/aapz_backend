@@ -20,17 +20,17 @@ namespace BLL
 {
     public class StreamingLogic
     {
-        public readonly ConcurrentDictionary<string, int> LastClassIdxs = new ConcurrentDictionary<string, int>();
-
+        public ConcurrentDictionary<string, int> LastClassIdxs => lastClassIdxs;
+        private static ConcurrentDictionary<string, int> lastClassIdxs = new ConcurrentDictionary<string, int>();
         private static bool SaverLaunched = false;
         private readonly AAPZ_BackendContext _context;
         private readonly HttpClient _httpClient = new HttpClient();
 
-        private readonly ConcurrentDictionary<string, CancellationTokenSource> VideoStreamCls = new ConcurrentDictionary<string, CancellationTokenSource>(); // use this
-        private readonly Stack<int> freePorts = new Stack<int>(Enumerable.Range(6000, 65535 - 6000).Reverse());
-        private readonly ConcurrentDictionary<string, VideoStream> VideoStreams = new ConcurrentDictionary<string, VideoStream>();
-        private readonly ConcurrentDictionary<string, Ride> CurrentRides = new ConcurrentDictionary<string, Ride>();
-        private readonly ISchedulerFactory schedulerFactory = new StdSchedulerFactory();
+        private static readonly ConcurrentDictionary<string, CancellationTokenSource> VideoStreamCls = new ConcurrentDictionary<string, CancellationTokenSource>(); // use this
+        private static readonly Stack<int> freePorts = new Stack<int>(Enumerable.Range(6000, 65535 - 6000).Reverse());
+        private static readonly ConcurrentDictionary<string, VideoStream> VideoStreams = new ConcurrentDictionary<string, VideoStream>();
+        private static readonly ConcurrentDictionary<string, Ride> CurrentRides = new ConcurrentDictionary<string, Ride>();
+        private static readonly ISchedulerFactory schedulerFactory = new StdSchedulerFactory();
 
         public StreamingLogic(AAPZ_BackendContext context)
         {
