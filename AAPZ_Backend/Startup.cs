@@ -87,7 +87,7 @@ namespace BLL
             });
             services.AddCors();
 
-            services.AddDbContext<AAPZ_BackendContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Transient);
+            services.AddDbContext<AAPZ_BackendContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Singleton);
 
             services.AddTransient<StreamingLogic>();
             services.AddTransient<Statistics>();

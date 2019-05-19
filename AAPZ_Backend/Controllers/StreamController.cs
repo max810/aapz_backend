@@ -84,8 +84,7 @@ namespace AAPZ_Backend.Controllers
             Driver driver = await _context.Drivers.FirstOrDefaultAsync(x => x.IdentifierHashB64 == hash);
 
             _streamingLogic.StopStream(driver);
-            throw new NotImplementedException();
-            // TODO - implement get driver. _streaming.StopStream();
+            return Ok();
         }
 
         private async Task<string> MakeInferenceRequest(byte[] imgJpegEncoded)

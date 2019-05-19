@@ -71,13 +71,19 @@ namespace BLL.Models
                     {
                         currentFrame = udpClient.Receive(ref sender);
                     });
+                    if (clsToken.IsCancellationRequested)
+                    {
+                        closedStatus = DriverVideoStreamFinishStatus.Graceful;
+                        IsRunning = false;
+                        return;
+                    }
 
                     await Task.WhenAny(frameReader, frameAwaiter);
 
                     bool timeout = !frameReader.IsCompleted && frameAwaiter.IsCompleted;
-                    if (timeout || clsToken.IsCancellationRequested)
+                    if (timeout)
                     {
-                        closedStatus = timeout ? DriverVideoStreamFinishStatus.Timeout : DriverVideoStreamFinishStatus.Graceful;
+                        closedStatus = DriverVideoStreamFinishStatus.Timeout;
                         IsRunning = false;
                         return;
                     }

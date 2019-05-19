@@ -6,6 +6,7 @@ using DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Quartz.Impl;
+using Quartz.Spi;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -127,6 +128,9 @@ namespace BLL
                 InProgress = true,
             };
 
+            _context.Rides.Add(ride);
+            //_context.SaveChanges();
+
             stream.Started += (s, e) => ride.StartTime = DateTime.Now;
 
             stream.Closed += (s, e) =>
@@ -138,6 +142,8 @@ namespace BLL
                     ride.InProgress = false;
                     _context.Entry(ride).State = EntityState.Modified;
                     _context.SaveChanges();
+
+                    // TODO - check why Cancel on token doesn't work and it waits for timeout anyway
                 }
             };
 
@@ -150,7 +156,6 @@ namespace BLL
                 stream.Start(cls.Token)
                 .Wait());
 
-            _context.Rides.Add(ride);
             CurrentRides[driverId] = ride;
 
             return stream;
@@ -178,15 +183,15 @@ namespace BLL
             IJobDetail job = JobBuilder.Create<SaverJob>()
                 .WithIdentity("saverJob", "group1")
                 .Build();
-
+            
             job.JobDataMap["_context"] = _context;
 
-            // Trigger the job to run now, and then every 40 seconds
+            // Trigger the job to run now, and then every 10 seconds
             ITrigger trigger = TriggerBuilder.Create()
               .WithIdentity("saverTrigger", "group1")
               .StartNow()
               .WithSimpleSchedule(x => x
-                  .WithIntervalInSeconds(40)
+                  .WithIntervalInSeconds(10)
                   .RepeatForever())
               .Build();
 
@@ -211,9 +216,10 @@ namespace BLL
             {
                 //return _context.SaveChangesAsync();
                 AAPZ_BackendContext dbContext = (AAPZ_BackendContext)context.JobDetail.JobDataMap["_context"];
-
+                Console.WriteLine("\n\n\nSAVING\n\n");
                 return dbContext.SaveChangesAsync();
             }
         }
     }
+
 }
