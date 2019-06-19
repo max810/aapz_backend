@@ -107,8 +107,11 @@ namespace AAPZ_Backend.Controllers
         public async Task<ActionResult<int>> GetMyRatingPlace()
         {
             User currentUser = await _userManager.GetUserAsync(HttpContext.User);
+            Console.WriteLine("Found user");
             Driver currentDriver = await _context.Drivers.FindAsync(currentUser.Id);
-            var drivers = _context.Drivers.Where(x => x.CompanyName == currentDriver.CompanyName).Include(x => x.Rides);
+            Console.WriteLine("Found driver");
+            var drivers = _context.Drivers.Where(x => x.CompanyName == currentDriver.CompanyName).Include(x => x.Rides).ToArray();
+            Console.WriteLine("Found All drivers");
             var stats = _statistics.GetRatingList(drivers);
 
             return stats.Select(x => x.DriverId).ToList().BinarySearch(currentDriver.Id) + 1;

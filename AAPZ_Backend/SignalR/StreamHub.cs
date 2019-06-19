@@ -67,7 +67,7 @@ namespace BLL.SignalR
         private async void OnFrameReceived(object sender, FrameReceivedEventArgs e)
         {
             VideoStream stream = sender as VideoStream;
-            int currentClassIdx = _streaming.LastClassIdxs[stream.DriverIdentifierHashB64];
+            int currentClassIdx = _streaming.LastClassIdxs.ContainsKey(stream.DriverIdentifierHashB64) ? _streaming.LastClassIdxs[stream.DriverIdentifierHashB64] : 0;
 
             await channel.Writer.WriteAsync(e.CurrentFrame);
             await Clients.Caller.InferenceMessage(currentClassIdx.ToString());

@@ -65,7 +65,10 @@ namespace BLL
 
         public void StopStream(Driver driver)
         {
-            VideoStreamCls[driver.IdentifierHashB64].Cancel();
+            if (VideoStreamCls.ContainsKey(driver.IdentifierHashB64))
+            {
+                VideoStreamCls[driver.IdentifierHashB64].Cancel();
+            }
         }
 
         //public void StopStream(string driverIdentifierHashB64)
